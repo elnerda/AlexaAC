@@ -7,6 +7,6 @@ Telegram Messenger controlled AC unit using Wemos D1 Mini and IR leds.<br>
 
 | Codename      | Hex Wert      | 
 | ------------- |:-------------:|
-|     An        | AFC3034C |
+|     An  18°C      | AFC3034C |
 |    Aus        | 1035C9DA      |  
 |  Rest kommt noch       |      |
