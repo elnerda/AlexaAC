@@ -1,9 +1,9 @@
 # TelegramAC<br>
 
-codes:<br>
-AFC3034C<br>
-1035C9DA
-<br>
+
+Telegram Messenger controlled AC unit using Wemos D1 Mini and IR leds.<br>
+19.06.18: Decoded the first remote values as hex numbers.<br>
+
 
 | Codename      | Hex Wert      | 
 | ------------- |:-------------:|
