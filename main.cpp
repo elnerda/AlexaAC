@@ -10,15 +10,14 @@ decode_results results;
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("Enabling IRin");
-  irrecv.enableIRIn(); // Start the receiver
-  Serial.println("Enabled IRin");
+  Serial.println("IR Empfangspin einschalten");
+  irrecv.enableIRIn(); // Empfänger starten
 }
 
 void loop() {
   if (irrecv.decode(&results)) {
     Serial.println(results.value, HEX);
-    irrecv.resume(); // Receive the next value
+    irrecv.resume(); // 
   }
   delay(100);
 }
