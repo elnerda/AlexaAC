@@ -19,5 +19,5 @@ void loop() {
     Serial.println(results.value, HEX);
     irrecv.resume(); // 
   }
-  delay(100);
+  delay(100); 
 }
