@@ -2,7 +2,11 @@
 #include <UniversalTelegramBot.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
+#include <IRremoteESP8266.h>
+#include <IRsend.h>
+
 #include "secrets.h"
+
 
 
 char ssid[] = SECRET_SSID;     // Hier Netzwerknamen eingeben
@@ -11,15 +15,29 @@ const char botToken[]=SECRET_BOT_TOKEN;
 
 WiFiClientSecure client;
 UniversalTelegramBot bot(botToken,client);
+IRsend irsend(IR_LED);
+
 
 int resetTicker = 0;            // Reset Ticker, damit ESP sich selbst resetten kann
 int postTicker = 0;
 int tickDelay = 500;      //Zeit zwischen der Abfrage neuer Nachrichten
+int khz = 38;
 int ledPin = D1;
 
 unsigned int Bot_mtbs = 1000; //mean time between scan messages
 unsigned long Bot_lasttime;   //last time messages' scan has been done
 bool Start = false;
+
+uint16_t aus[] = {8350, 4200, 450, 1650, 450, 550, 500, 550, 500, 550, 500, 1600, 500, 550, 450, 600, 450,
+  550, 500, 1650, 450, 1600, 500, 550, 500, 550, 450, 600, 450, 550, 500, 550, 500, 550, 500, 550, 500, 550,
+  500, 550, 500, 550, 450, 550, 500, 1650, 450, 550, 500, 1600, 500, 550, 500, 550, 450, 550, 500, 1650, 450};
+  
+uint16_t an[] = {8300,4200, 500,1600, 500,550, 500,550, 450,550, 500,1650, 450,550, 500,550, 500,550, 500,550,
+   500,550, 450,550, 500,550, 500,550, 500,550, 500,550, 500,550, 500,550, 500,500, 500,1650, 450,1600, 500,550,
+    500,1600, 500,500, 500,550, 500,550, 500,1600, 500,1600, 500,1600, 450};
+
+
+
 
 void handleNewMessages(int numNewMessages) {
   Serial.println("handleNewMessages");
@@ -34,12 +52,18 @@ void handleNewMessages(int numNewMessages) {
 
     if (text == "/on") {
       digitalWrite(ledPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+
+      irsend.sendRaw(an,59,khz);
       bot.sendMessage(chat_id, "Klima ist an", "");
+
     }
 
     if (text == "/off") {
       digitalWrite(ledPin, LOW);    // turn the LED off (LOW is the voltage level)
+
+      irsend.sendRaw(aus,59,khz);
       bot.sendMessage(chat_id, "Klima ist aus", "");
+
     }
 
 
@@ -57,6 +81,7 @@ void handleNewMessages(int numNewMessages) {
 void setup() {
     // put your setup code here, to run once:
     Serial.begin(9600);
+    irsend.begin();
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
     delay(100);
