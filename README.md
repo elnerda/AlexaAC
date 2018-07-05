@@ -13,3 +13,6 @@ https://github.com/PaulStoffregen/OneWire
 |     An  18°C      | AFC3034C |
 |    Aus        | 1035C9DA      |  
 |  Rest kommt noch       |      |
+
+
+<iframe src="https://discordapp.com/widget?id=143428370640666625&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0"></iframe>
