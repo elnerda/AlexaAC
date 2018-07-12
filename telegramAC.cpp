@@ -131,30 +131,35 @@ void handleNewMessages(int numNewMessages) {
       digitalWrite(ledPin, LOW);    // turn the LED off (LOW is the voltage level)
       irsend.sendRaw(set18,59,khz);
       settemp=18;
+      anaus=true;
       bot.sendMessage(chat_id, "Klima ist auf 18°C gesetzt.", "");
     }
     if (text == "/set19") {
       digitalWrite(ledPin, LOW);    // turn the LED off (LOW is the voltage level)
       irsend.sendRaw(set19,59,khz);
       settemp=19;
+      anaus=true;
       bot.sendMessage(chat_id, "Klima ist auf 19°C gesetzt.", "");
     }
     if (text == "/set20") {
       digitalWrite(ledPin, LOW);    // turn the LED off (LOW is the voltage level)
       irsend.sendRaw(set20,59,khz);
       settemp=20;
+      anaus=true;
       bot.sendMessage(chat_id, "Klima ist auf 20°C gesetzt.", "");
     }
     if (text == "/set21") {
       digitalWrite(ledPin, LOW);    // turn the LED off (LOW is the voltage level)
       irsend.sendRaw(set21,59,khz);
       settemp=21;
+      anaus=true;
       bot.sendMessage(chat_id, "Klima ist auf 21°C gesetzt.", "");
     }
     if (text == "/set22") {
       digitalWrite(ledPin, LOW);    // turn the LED off (LOW is the voltage level)
       irsend.sendRaw(set22,59,khz);
       settemp=22;
+      anaus=true;
       bot.sendMessage(chat_id, "Klima ist auf 22°C gesetzt.", "");
     }
     if (text == "/temp") {
@@ -207,6 +212,7 @@ void turnOn(String deviceId) {
   {
     Serial.print("Turn on device id: ");
     irsend.sendRaw(an18,59,khz);
+    anaus=true;
     Serial.println(deviceId);
   }
 
@@ -221,6 +227,7 @@ void turnOff(String deviceId) {
    {
      Serial.print("Turn off Device ID: ");
      irsend.sendRaw(aus,59,khz);
+     anaus=false;
      Serial.println(deviceId);
    }
   else {
@@ -243,17 +250,6 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       break;
     case WStype_TEXT: {
         Serial.printf("[WSc] get text: %s\n", payload);
-        // Example payloads
-
-        // For Light device type
-        // {"deviceId": xxxx, "action": "setPowerState", value: "ON"} // https://developer.amazon.com/docs/device-apis/alexa-powercontroller.html
-        // {"deviceId": xxxx, "action": "AdjustBrightness", value: 3} // https://developer.amazon.com/docs/device-apis/alexa-brightnesscontroller.html
-        // {"deviceId": xxxx, "action": "setBrightness", value: 42} // https://developer.amazon.com/docs/device-apis/alexa-brightnesscontroller.html
-        // {"deviceId": xxxx, "action": "SetColor", value: {"hue": 350.5,  "saturation": 0.7138, "brightness": 0.6501}} // https://developer.amazon.com/docs/device-apis/alexa-colorcontroller.html
-        // {"deviceId": xxxx, "action": "DecreaseColorTemperature"} // https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html
-        // {"deviceId": xxxx, "action": "IncreaseColorTemperature"} // https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html
-        // {"deviceId": xxxx, "action": "SetColorTemperature", value: 2200} // https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html
-
         DynamicJsonBuffer jsonBuffer;
         JsonObject& json = jsonBuffer.parseObject((char*)payload);
         String deviceId = json ["deviceId"];
@@ -268,8 +264,6 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
             }
         }
         else if(action == "SetColor") {
-            // Alexa, set the device name to red
-            // get text: {"deviceId":"xxxx","action":"SetColor","value":{"hue":0,"saturation":1,"brightness":1}}
             String hue = json ["value"]["hue"];
             String saturation = json ["value"]["saturation"];
             String brightness = json ["value"]["brightness"];
