@@ -7,6 +7,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "secrets.h"
+#include <WebSocketsClient.h>
+#include <ArduinoJson.h>
+
 /*-----------------------------------------------------------------------------------------------------------------------*/
 char ssid[] = SECRET_SSID;     // Hier Netzwerknamen eingeben
 char password[] = SECRET_PASS; // Hier Netzwerkpasswort eingeben
@@ -17,6 +20,8 @@ UniversalTelegramBot bot(botToken,client);
 IRsend irsend(IR_LED);
 OneWire onewire(ONE_WIRE_BUS);
 DallasTemperature ds(&onewire);
+WebSocketsClient webSocket;
+
 /*-----------------------------------------------------------------------------------------------------------------------*/
 int resetTicker = 0;            // Reset Ticker, damit ESP sich selbst resetten kann
 int postTicker = 0;
@@ -30,6 +35,8 @@ int settemp=18;
 unsigned int Bot_mtbs = 1000; //mean time between scan messages
 unsigned long Bot_lasttime;   //last time messages' scan has been done
 bool Start = false;
+
+bool isConnected = false;
 /*------------------------------------------------------------------------------------------------------------------------*/
 uint16_t aus[] = {8350, 4200, 450, 1650, 450, 550, 500, 550, 500, 550, 500, 1600, 500, 550, 450, 600, 450,
   550, 500, 1650, 450, 1600, 500, 550, 500, 550, 450, 600, 450, 550, 500, 550, 500, 550, 500, 550, 500, 550,
@@ -194,6 +201,99 @@ void handleNewMessages(int numNewMessages) {
     }
   }
 }
+
+void turnOn(String deviceId) {
+  if (deviceId == "5b460b91d304761c552e2d3b") // Device ID of first device
+  {
+    Serial.print("Turn on device id: ");
+    irsend.sendRaw(an18,59,khz);
+    Serial.println(deviceId);
+  }
+
+  else {
+    Serial.print("Turn on for unknown device id: ");
+    Serial.println(deviceId);
+  }
+}
+
+void turnOff(String deviceId) {
+   if (deviceId == "5b460b91d304761c552e2d3b") // Device ID of first device
+   {
+     Serial.print("Turn off Device ID: ");
+     irsend.sendRaw(aus,59,khz);
+     Serial.println(deviceId);
+   }
+  else {
+     Serial.print("Turn off for unknown device id: ");
+     Serial.println(deviceId);
+  }
+}
+
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      isConnected = false;
+      Serial.printf("[WSc] Webservice disconnected from sinric.com!\n");
+      break;
+    case WStype_CONNECTED: {
+      isConnected = true;
+      Serial.printf("[WSc] Service connected to sinric.com at url: %s\n", payload);
+      Serial.printf("Waiting for commands from sinric.com ...\n");
+      }
+      break;
+    case WStype_TEXT: {
+        Serial.printf("[WSc] get text: %s\n", payload);
+        // Example payloads
+
+        // For Light device type
+        // {"deviceId": xxxx, "action": "setPowerState", value: "ON"} // https://developer.amazon.com/docs/device-apis/alexa-powercontroller.html
+        // {"deviceId": xxxx, "action": "AdjustBrightness", value: 3} // https://developer.amazon.com/docs/device-apis/alexa-brightnesscontroller.html
+        // {"deviceId": xxxx, "action": "setBrightness", value: 42} // https://developer.amazon.com/docs/device-apis/alexa-brightnesscontroller.html
+        // {"deviceId": xxxx, "action": "SetColor", value: {"hue": 350.5,  "saturation": 0.7138, "brightness": 0.6501}} // https://developer.amazon.com/docs/device-apis/alexa-colorcontroller.html
+        // {"deviceId": xxxx, "action": "DecreaseColorTemperature"} // https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html
+        // {"deviceId": xxxx, "action": "IncreaseColorTemperature"} // https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html
+        // {"deviceId": xxxx, "action": "SetColorTemperature", value: 2200} // https://developer.amazon.com/docs/device-apis/alexa-colortemperaturecontroller.html
+
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject((char*)payload);
+        String deviceId = json ["deviceId"];
+        String action = json ["action"];
+
+        if(action == "setPowerState") { // Switch or Light
+            String value = json ["value"];
+            if(value == "ON") {
+                turnOn(deviceId);
+            } else {
+                turnOff(deviceId);
+            }
+        }
+        else if(action == "SetColor") {
+            // Alexa, set the device name to red
+            // get text: {"deviceId":"xxxx","action":"SetColor","value":{"hue":0,"saturation":1,"brightness":1}}
+            String hue = json ["value"]["hue"];
+            String saturation = json ["value"]["saturation"];
+            String brightness = json ["value"]["brightness"];
+
+            Serial.println("[WSc] hue: " + hue);
+            Serial.println("[WSc] saturation: " + saturation);
+            Serial.println("[WSc] brightness: " + brightness);
+        }
+        else if(action == "setBrightness") {
+
+        }
+        else if(action == "AdjustBrightness") {
+
+        }
+        else if (action == "test") {
+            Serial.println("[WSc] received test command from sinric.com");
+        }
+      }
+      break;
+    case WStype_BIN:
+      Serial.printf("[WSc] get binary length: %u\n", length);
+      break;
+  }
+}
 /*---------------------------------------------------------------------------------------------------------------------------*/
 void setup() {
     // put your setup code here, to run once:
@@ -226,10 +326,17 @@ void setup() {
     Serial.println(WiFi.localIP()); //Bei Wlan_Verbindung IP adresse ausgeben
     pinMode(ledPin,OUTPUT);
     pinMode(IR_LED,OUTPUT);
+    //sinric
+
+    webSocket.begin("iot.sinric.com", 80, "/");
+    webSocket.onEvent(webSocketEvent);
+    webSocket.setAuthorization("apikey",MyApiKey);
+    webSocket.setReconnectInterval(5000);
 }
 /*---------------------------------------------------------------------------------------------------------------------------*/
 void loop() {
   if (millis() > Bot_lasttime + Bot_mtbs)  {
+    webSocket.loop();
     int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
     while(numNewMessages) {
       Serial.println("got response");
